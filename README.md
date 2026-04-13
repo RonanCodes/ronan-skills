@@ -61,12 +61,14 @@ To make this marketplace show up automatically when someone opens your project i
 
 ```json
 {
-    "extraKnownMarketplaces": [
-        {
-            "source": "github",
-            "repo": "RonanCodes/skills"
+    "extraKnownMarketplaces": {
+        "ronan-skills": {
+            "source": {
+                "source": "github",
+                "repo": "RonanCodes/skills"
+            }
         }
-    ]
+    }
 }
 ```
 
