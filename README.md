@@ -13,6 +13,7 @@ npx skills add RonanCodes/ronan-skills/src/ralph -g
 npx skills add RonanCodes/ronan-skills/src/frontend-design -g
 npx skills add RonanCodes/ronan-skills/src/create-skill -g
 npx skills add RonanCodes/ronan-skills/src/doc-standards -g
+npx skills add RonanCodes/ronan-skills/src/commit -g
 ```
 
 Or install into the current project only (omit `-g`):
@@ -32,6 +33,7 @@ ln -s <your-dev-folder>/ronan-skills/src/ralph ~/.claude/skills/ralph
 ln -s <your-dev-folder>/ronan-skills/src/frontend-design ~/.claude/skills/frontend-design
 ln -s <your-dev-folder>/ronan-skills/src/create-skill ~/.claude/skills/create-skill
 ln -s <your-dev-folder>/ronan-skills/src/doc-standards ~/.claude/skills/doc-standards
+ln -s <your-dev-folder>/ronan-skills/src/commit ~/.claude/skills/commit
 ```
 
 Skills available globally. `git pull` to update.
@@ -44,6 +46,7 @@ Skills available globally. `git pull` to update.
 | [frontend-design](src/frontend-design) | Create distinctive, production-grade frontend interfaces. Avoids generic AI aesthetics. |
 | [create-skill](src/create-skill) | Meta-skill for creating new skills with proper SKILL.md structure, frontmatter, and best practices. |
 | [doc-standards](src/doc-standards) | Documentation conventions: mermaid diagrams, formatting, when to use which diagram type. |
+| [commit](src/commit) | Emoji conventional commit format. Handles staging, message formatting, and timestamp rules. |
 
 ## How It Works
 
@@ -55,7 +58,8 @@ repo/
 │   ├── ralph/SKILL.md
 │   ├── frontend-design/SKILL.md
 │   ├── create-skill/SKILL.md
-│   └── doc-standards/SKILL.md
+│   ├── doc-standards/SKILL.md
+│   └── commit/SKILL.md
 ├── README.md
 └── LICENSE
 ```
