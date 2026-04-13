@@ -10,9 +10,8 @@ Personal agent skills for Claude Code, Cursor, Codex, and [40+ other AI agents](
 # Add the marketplace (one-time)
 /plugin marketplace add RonanCodes/skills
 
-# Install individual plugins
-/plugin install ralph@ronan-skills
-/plugin install frontend-design@ronan-skills
+# Install all skills as one plugin
+/plugin install ronan-skills@ronan-skills
 ```
 
 ### Option 2: Clone + additionalDirectories
@@ -42,9 +41,13 @@ git clone https://github.com/RonanCodes/skills.git ~/.claude/skills
 ### Option 4: npx (any agent, not just Claude)
 
 ```bash
-npx skills add RonanCodes/skills/ralph -g
-npx skills add RonanCodes/skills/frontend-design -g
+npx skills add RonanCodes/skills/skills/ralph -g
+npx skills add RonanCodes/skills/skills/frontend-design -g
+npx skills add RonanCodes/skills/skills/create-skill -g
+npx skills add RonanCodes/skills/skills/doc-standards -g
 ```
+
+Note: The double `skills/skills/` is because the repo is named `skills` and the skills live in a `skills/` subfolder.
 
 ## Skills
 
