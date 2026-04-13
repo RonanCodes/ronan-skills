@@ -7,40 +7,13 @@
     },
     "plugins": [
         {
-            "name": "ralph",
-            "source": "./plugins/ralph",
-            "description": "Autonomous build loop. Reads PRD, implements one story per iteration, validates, commits, tracks progress.",
+            "name": "ronan-skills",
+            "source": "./plugins/ronan-skills",
+            "description": "All-in-one: ralph autonomous loop, frontend design, skill creation, doc standards. 4 skills in one plugin.",
             "version": "1.0.0",
             "category": "development",
             "license": "MIT",
-            "keywords": ["ralph", "autonomous", "prd", "loop"]
-        },
-        {
-            "name": "frontend-design",
-            "source": "./plugins/frontend-design",
-            "description": "Create distinctive, production-grade frontend interfaces. Avoids generic AI aesthetics.",
-            "version": "1.0.0",
-            "category": "development",
-            "license": "MIT",
-            "keywords": ["design", "frontend", "ui", "css"]
-        },
-        {
-            "name": "create-skill",
-            "source": "./plugins/create-skill",
-            "description": "Meta-skill for creating new skills with proper SKILL.md structure and frontmatter.",
-            "version": "1.0.0",
-            "category": "development",
-            "license": "MIT",
-            "keywords": ["skill", "meta", "create"]
-        },
-        {
-            "name": "doc-standards",
-            "source": "./plugins/doc-standards",
-            "description": "Documentation standards: mermaid diagrams, formatting, consistent structure.",
-            "version": "1.0.0",
-            "category": "development",
-            "license": "MIT",
-            "keywords": ["docs", "mermaid", "standards"]
+            "keywords": ["ralph", "design", "skills", "docs"]
         }
     ]
 }
