@@ -51,6 +51,20 @@ Skills available globally. `git pull` to update.
 | [commit](src/commit) | Emoji conventional commit format. Handles staging, message formatting, and timestamp rules. |
 | [coding-principles](src/coding-principles) | Software design principles — KISS, SOLID, DRY, tracer bullets. Index + detail files read on demand. |
 
+## Recommended MCPs
+
+These MCP servers pair well with the skills above. Install globally so they're available in every project:
+
+```bash
+claude mcp add -s user playwright -- npx @playwright/mcp@latest
+claude mcp add -s user context7 -- npx -y @upstash/context7-mcp@latest
+```
+
+| MCP | What it does |
+|-----|-------------|
+| [Playwright](https://github.com/anthropics/mcp-playwright) | Browser automation — test UIs, take screenshots, interact with web pages |
+| [Context7](https://github.com/upstash/context7) | Fetch up-to-date docs for any library directly into context (no API key needed) |
+
 ## How It Works
 
 These skills follow the [Agent Skills](https://agentskills.io) open standard. Each skill is a `SKILL.md` file with YAML frontmatter.
