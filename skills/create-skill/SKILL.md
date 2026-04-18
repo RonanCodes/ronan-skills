@@ -115,6 +115,71 @@ Inject live data with `` !`command` `` syntax (runs before Claude sees the conte
 
 Scripts save tokens and improve reliability vs Claude generating code each time.
 
+## Environment Variables (Credentials)
+
+If a skill's script needs API tokens or other secrets, the location depends on whether the skill lives in a **plugin** or a **standalone repo**. Use the right pattern for the shape.
+
+### A. Standalone skill (in a repo's `.claude/skills/`)
+
+One `.env` at the **repo root**, gitignored, with `.env.example` committed. All skills in the repo share it. Mirrors Laravel/Next.js convention.
+
+```
+repo/
+├── .env                             # gitignored, user's secrets
+├── .env.example                     # committed template
+├── .gitignore                       # contains `.env`
+└── .claude/skills/<name>/
+    ├── SKILL.md
+    └── scripts/helper.sh            # sources `../../../.env`
+```
+
+Inside the script:
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/../../../.env"     # walk up: scripts/ → skill/ → skills/ → .claude/ → repo root
+```
+
+### B. Plugin skill (in a repo with `.claude-plugin/plugin.json`)
+
+Use **`${CLAUDE_PLUGIN_DATA}/.env`** — Claude Code's documented persistent plugin-data directory. Survives plugin updates and is auto-cleaned on uninstall. For Cursor or dev mode (where the var isn't set), fall back to the explicit path.
+
+```
+plugin-repo/
+├── .claude-plugin/plugin.json
+├── .env.example                     # committed template with setup instructions
+└── skills/<name>/scripts/helper.sh  # sources $CLAUDE_PLUGIN_DATA/.env
+```
+
+Inside the script:
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+# One-liner: CLAUDE_PLUGIN_DATA when set by Claude Code; explicit fallback otherwise
+ENV_FILE="${CLAUDE_PLUGIN_DATA:-$HOME/.claude/plugins/data/<plugin-id>}/.env"
+if [ ! -f "$ENV_FILE" ]; then
+  echo "ERROR: credentials not found at $ENV_FILE" >&2
+  exit 1
+fi
+# shellcheck disable=SC1090
+source "$ENV_FILE"
+```
+
+Where `<plugin-id>` is the plugin's canonical id (`name@marketplace-name` with non-alphanumerics replaced by `-`).
+
+### Why the split?
+
+- **Standalone repo** IS where Claude loads skills from → relative `../../../.env` works reliably.
+- **Plugins** get COPIED to `~/.claude/plugins/cache/...` on install → relative paths break. `${CLAUDE_PLUGIN_DATA}` is the [documented escape hatch](https://code.claude.com/docs/en/plugins-reference#persistent-data-directory).
+
+### Shared conventions either way
+
+- Never commit `.env` (add to `.gitignore`; `*.env` pattern is a good default)
+- Always commit `.env.example` with placeholder values as documentation
+- `chmod 600` the real `.env` after creating it
+- One env file per repo/plugin, shared across skills — don't create a `.env` per skill (rotation nightmare)
+
 ## Checklist
 
 Before saving, verify:
@@ -125,3 +190,4 @@ Before saving, verify:
 - [ ] Concrete examples included
 - [ ] `disable-model-invocation` set correctly
 - [ ] Supporting files referenced from SKILL.md if they exist
+- [ ] If the skill needs secrets: the right env pattern is used (repo-root `.env` for standalone, `${CLAUDE_PLUGIN_DATA}/.env` for plugin) — see "Environment Variables" section
