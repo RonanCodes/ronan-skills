@@ -32,8 +32,33 @@ This lets one repo drive multiple concurrent phases/initiatives without progress
 
 **Shared Codebase Patterns:** if `.ralph/patterns.md` exists, treat it as global learnings read on every iteration regardless of which PRD is active. Individual progress files still carry the per-iteration detail.
 
+## Gitignore Policy (first-run prompt)
+
+Before the main loop runs, check `.ralph/.gitignore-policy`. If the file exists, read it and proceed. If missing, ask the user once using `AskUserQuestion`:
+
+**Question:** "How should ralph's `.ralph/` folder be handled in git for this repo?"
+
+**Options:**
+
+1. **commit-all** (recommended) — Track PRDs, progress logs, patterns, and archive. PRs gain spec context, learnings are preserved, mid-phase handoffs work. Pick this unless you have a reason not to.
+2. **commit-archive-only** — Commit `archive/`, `patterns.md`, and the policy file, but gitignore live `prd*.json` + `progress*.txt`. Middle ground — preserves finished-phase history without daily scratch.
+3. **gitignore-all** — Fully gitignore `.ralph/`. Use for private experiments, rapid scratch PRDs, or data vaults where batch PRDs would be noise.
+
+Write the chosen value (one of `commit-all`, `commit-archive-only`, `gitignore-all`) as a single line to `.ralph/.gitignore-policy`, then reconcile the repo's root `.gitignore`:
+
+| Policy | `.gitignore` entries |
+|--------|----------------------|
+| `commit-all` | *(no entry — remove any existing `.ralph/` line)* |
+| `commit-archive-only` | `.ralph/prd*.json`<br>`.ralph/progress*.txt` |
+| `gitignore-all` | `.ralph/*`<br>`!.ralph/.gitignore-policy` |
+
+In all three modes, `.ralph/.gitignore-policy` itself is tracked — so the team shares the policy decision. Under `gitignore-all` the pattern must be `.ralph/*` (not `.ralph/`) because git cannot negate files inside a fully-ignored directory.
+
+Don't re-prompt once the file exists. To change policy later, edit `.ralph/.gitignore-policy` manually and update `.gitignore` to match.
+
 ## How It Works
 
+0. Ensure `.ralph/.gitignore-policy` exists (see "Gitignore Policy" above); if not, prompt once and write it before touching any PRD
 1. Resolve PRD file from `--prd` flag (or default `.ralph/prd.json`) — find the highest priority story where `passes: false`
 2. Read the matching progress file (and `.ralph/patterns.md` if present) — check Codebase Patterns section for learnings from prior iterations
 3. Implement the story
