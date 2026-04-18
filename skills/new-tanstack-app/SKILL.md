@@ -142,11 +142,22 @@ Delegate to `/ro:better-auth install`. Afterwards:
 
 ### 8. `--posthog` → `/ro:posthog install --both`
 
-Delegate. Client + server SDK. Skill writes `VITE_POSTHOG_PROJECT_API_KEY` placeholder to `.dev.vars` and reminds user to set the project API key (`phc_...`).
+Delegate. Client + server SDK. For public-facing apps, prefer **runtime config injection** over `VITE_*` (see "Runtime-injected observability" below) — the key still ships to browsers either way, but runtime injection means forks don't ship your key and rotations don't need a rebuild.
 
 ### 9. `--sentry` → `/ro:sentry install --tanstack` + `project create`
 
-Delegate install. Then `/ro:sentry project create <app-slug> --platform javascript-react` creates a Sentry project and returns the DSN. Skill writes DSN to `.dev.vars` as `VITE_SENTRY_DSN` + sets as wrangler secret for server-side.
+Delegate install. Then `/ro:sentry project create <app-slug> --platform javascript-react` creates a Sentry project and returns the DSN. For public-facing apps, prefer **runtime config injection** (see below) over `VITE_SENTRY_DSN`.
+
+### Runtime-injected observability (recommended default)
+
+Instead of baking Sentry DSN + PostHog key into the bundle via `VITE_*` vars, store them as Cloudflare Worker `vars` and expose them via an `/api/config` endpoint the client fetches on load. Scaffold:
+
+- `wrangler.jsonc` → `vars: { SENTRY_DSN: "", POSTHOG_PROJECT_KEY: "", POSTHOG_INGEST_HOST: "https://eu.i.posthog.com" }`
+- `src/routes/api/config.ts` → GET returns `{ sentryDsn, posthogKey, posthogHost }` from `env`
+- `src/lib/runtime-config.ts` → memoised client-side `fetch('/api/config')`
+- `initSentry()` / `initPostHog()` are **async**, read from runtime-config, no-op if keys are empty
+
+Benefits: keys rotate without rebuilds, CI builds without observability secrets, forks don't ship your keys. Cost: one extra fetch before analytics init (fine for non-critical-path analytics). Document the flow in `ARCHITECTURE.md`.
 
 ### 10. `--uptime` → `/ro:uptimerobot monitor create` (post-deploy)
 
