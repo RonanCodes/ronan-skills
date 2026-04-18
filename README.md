@@ -1,12 +1,12 @@
 # Ronan Skills (`ro`)
 
-A Claude Code plugin bundling 20 personal skills for development, quality, browser/visual, research, and project setup. Invoke any skill as `/ro:<skill-name>`.
+A Claude Code plugin bundling 26 personal skills for development, quality, browser/visual, audio/media, research, and project setup. Invoke any skill as `/ro:<skill-name>`.
 
 Also publishable to Cursor, and individual skills work with [40+ other AI agents](https://agentskills.io) via `npx skills add`.
 
 ## Install
 
-### Claude Code (recommended — bundles all 20 skills in one command)
+### Claude Code (recommended — bundles all 26 skills in one command)
 
 ```bash
 /plugin marketplace add RonanCodes/ronan-skills
@@ -77,6 +77,17 @@ All skills invoke as `/ro:<skill-name>` in Claude Code.
 |-------|-------------|
 | [perplexity-research](skills/perplexity-research) | Sourced web research via the Perplexity API. |
 
+### Audio & Media
+
+| Skill | Description |
+|-------|-------------|
+| [tts-elevenlabs](skills/tts-elevenlabs) | Text-to-speech via ElevenLabs API. Multiple voices, multilingual. |
+| [sfx-elevenlabs](skills/sfx-elevenlabs) | Sound effects generation via ElevenLabs. Text-to-sound, 0.5–30s. |
+| [music-elevenlabs](skills/music-elevenlabs) | Music generation via ElevenLabs. Instrumental, composition plans. |
+| [audio-mix](skills/audio-mix) | Combine voice + music + SFX via ffmpeg. Volume, fade, timestamps. |
+| [generate-image](skills/generate-image) | Image generation via AI APIs. |
+| [transcribe](skills/transcribe) | Audio/video transcription to text. |
+
 ### Project Setup & Tooling
 
 | Skill | Description |
@@ -128,13 +139,30 @@ ronan-skills/
 │   ├── perplexity-research/SKILL.md
 │   ├── create-skill/SKILL.md
 │   ├── setup-wizard/SKILL.md
-│   └── doc-standards/SKILL.md
+│   ├── doc-standards/SKILL.md
+│   ├── tts-elevenlabs/SKILL.md
+│   ├── sfx-elevenlabs/SKILL.md
+│   ├── music-elevenlabs/SKILL.md
+│   ├── audio-mix/SKILL.md
+│   ├── generate-image/SKILL.md
+│   └── transcribe/SKILL.md
 ├── .env.example
 ├── README.md
 └── LICENSE
 ```
 
 Each skill is a `SKILL.md` with YAML frontmatter (`name`, `description`, `category`, ...). Follows the [Agent Skills](https://agentskills.io) open standard.
+
+## Versioning & Plugin Updates
+
+**Important:** Claude Code's plugin system caches plugins by version. `claude plugin update` and `autoUpdate` both compare the `version` field in `.claude-plugin/plugin.json` — if it hasn't changed, updates silently no-op even if new skills were added.
+
+**Convention:** Bump the version in `.claude-plugin/plugin.json` whenever skills are added, removed, or significantly changed. Use semver:
+- **Patch** (1.1.1 → 1.1.2): Fixes within existing skills
+- **Minor** (1.1.0 → 1.2.0): New skills added
+- **Major** (1.0.0 → 2.0.0): Breaking changes to existing skills
+
+Without a version bump, colleagues running `claude plugin update ro@ronan-skills` will miss new skills.
 
 ## License
 
