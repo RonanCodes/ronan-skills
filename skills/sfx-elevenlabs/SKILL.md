@@ -119,7 +119,33 @@ echo "✅ API key works" && open /tmp/sfx-test.mp3
 
 - **Duration**: 0.5–30 seconds per generation
 - **Looping**: only supported on v2 model (`eleven_text_to_sound_v2`)
+- **Concurrency**: API caps at **4 concurrent requests** — exceeding returns HTTP 429 `rate_limit_error`. When batch-generating, throttle parallel curls (e.g. `while [[ $(jobs -r | wc -l) -ge 4 ]]; do sleep 0.2; done`).
 - **Prompt quality matters**: be specific about the sound, its environment, and character
+
+## Prompt Crafting (video SFX)
+
+A good video SFX prompt has three parts: **texture** + **character** + **duration cue**. Vague prompts ("glitch sound") produce generic noise; specific prompts ("short digital glitch stutter, lo-fi corruption, punchy distortion") produce usable hits.
+
+| Pattern | Template | Example |
+|---------|----------|---------|
+| **Short hit** | `<texture>, <mood>, short and <quality>` | `magical chime burst, rising shimmer, short and energetic` |
+| **Whoosh** | `<material> whoosh and <tail>, <feel>, quick` | `card whoosh and soft thump, tactile, quick` |
+| **Ambient pad** | `<instrument>, <mood>, <adjective>` | `warm synth pad swell, psychedelic ambient, dreamy` |
+| **Tech/UI** | `<action>, <descriptor>, <pacing cue>` | `digital counter ticking up rapidly then stopping with a soft ding` |
+| **Glitch/distortion** | `short <type> <motion>, lo-fi <qualifier>, punchy <descriptor>` | `short digital glitch stutter, lo-fi corruption, punchy distortion` |
+
+Avoid: single-word prompts, overly long narrative descriptions, conflicting adjectives (e.g. "soft aggressive"). When a generation sounds wrong, rewrite the prompt — don't tweak `prompt_influence` hoping for a miracle.
+
+## Per-Effect Volume Tuning
+
+When layering multiple SFX in a video, generated loudness varies wildly across prompts even at the same `prompt_influence`. Budget a second pass to tune per-effect volume rather than fighting the generation. Typical tuning range in Remotion `<Audio volume={N} />`:
+
+- Harsh/distorted (glitch, impact): **0.25–0.35**
+- Ambient pads, drones: **0.35–0.45**
+- Whoosh, clicks, chimes: **0.5–0.6**
+- Gentle/watery/organic: **0.65–0.75**
+
+Listen on headphones at moderate volume — what sounds fine on speakers often clips in earbuds.
 
 ## Example Prompts
 
