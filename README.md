@@ -1,12 +1,12 @@
 # Ronan Skills (`ro`)
 
-A Claude Code plugin bundling 26 personal skills for development, quality, browser/visual, audio/media, research, and project setup. Invoke any skill as `/ro:<skill-name>`.
+A Claude Code plugin bundling 29 personal skills for development, quality, browser/visual, audio/media, research, and project setup. Invoke any skill as `/ro:<skill-name>`.
 
 Also publishable to Cursor, and individual skills work with [40+ other AI agents](https://agentskills.io) via `npx skills add`.
 
 ## Install
 
-### Claude Code (recommended — bundles all 26 skills in one command)
+### Claude Code (recommended — bundles all 29 skills in one command)
 
 ```bash
 /plugin marketplace add RonanCodes/ronan-skills
@@ -29,12 +29,15 @@ npx skills add RonanCodes/ronan-skills/skills/commit -g
 
 ## Configuration
 
-Skills that need API keys (e.g. `perplexity-research`) read from a shared env file:
+Skills that need API keys read from a shared env file. Canonical location:
 
-- **Claude Code**: `${CLAUDE_PLUGIN_DATA}/.env` — persistent, survives plugin updates
+- **Default (all agents, all projects)**: `~/.claude/.env`
+- **Claude Code plugin override**: `${CLAUDE_PLUGIN_DATA}/.env` (persistent, survives plugin updates)
 - **Other agents**: `~/.config/ro/.env`
 
-Copy `.env.example` as a starting point, or run `/ro:setup-wizard --tokens` for a guided walkthrough.
+Skills look up `~/.claude/.env` first, then fall back to the agent-specific paths above. See `.env.example` in this repo for every variable, where to generate it, and which skill consumes it.
+
+Copy the keys from `.env.example` into `~/.claude/.env` and fill them in, or run `/ro:setup-wizard --tokens` for a guided walkthrough.
 
 ## Skills
 
@@ -60,6 +63,7 @@ All skills invoke as `/ro:<skill-name>` in Claude Code.
 | [grill-me](skills/grill-me) | Stress-test plans, designs, PRDs, or code with relentless probing questions. |
 | [ubiquitous-language](skills/ubiquitous-language) | DDD-style glossary for consistent domain terminology. |
 | [git-guardrails](skills/git-guardrails) | Blocks destructive git commands, suggests safer alternatives. _(auto-loaded)_ |
+| [security-audit](skills/security-audit) | Pre-publish safety check — secrets, PII, work info, risky git history. |
 
 ### Browser & Visual
 
@@ -131,6 +135,7 @@ ronan-skills/
 │   ├── grill-me/SKILL.md
 │   ├── ubiquitous-language/SKILL.md
 │   ├── git-guardrails/SKILL.md
+│   ├── security-audit/SKILL.md
 │   ├── frontend-design/SKILL.md
 │   ├── browser-dev/SKILL.md
 │   ├── playwright-check/SKILL.md
