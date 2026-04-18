@@ -78,7 +78,7 @@ FULL_PROMPT="$SYSTEM_HINT $STYLE_HINT $BASE_PROMPT"
 
 ```bash
 OUTPUT="${OUTPUT_PATH:-/tmp/generate-image-$(date +%s).png}"
-MODEL="gemini-2.0-flash-exp"  # Nano Banana 2 model with image generation
+MODEL="nano-banana-pro-preview"  # Nano Banana 2 — image generation
 
 # Gemini image generation via the generateContent endpoint with image output
 RESPONSE=$(curl -s "https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}" \
@@ -165,7 +165,7 @@ fi
 ```
 ✅ Image generated
    Prompt:  <first 80 chars of prompt>...
-   Model:   gemini-2.0-flash-exp (Nano Banana 2)
+   Model:   nano-banana-pro-preview (Nano Banana 2)
    Size:    <WxH>
    Style:   <style>
    Output:  <output path>

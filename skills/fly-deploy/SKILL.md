@@ -24,8 +24,30 @@ Ship Docker containers to Fly.io using `flyctl`. Covers launch, deploy, status, 
 ## Prerequisites
 
 - `flyctl` installed — if missing: `brew install flyctl` (macOS) or `curl -L https://fly.io/install.sh | sh`
-- Authenticated — check `flyctl auth whoami`. If not: either `flyctl auth login` (browser) or set `FLY_API_TOKEN` from https://fly.io/user/personal_access_tokens in `${CLAUDE_PLUGIN_DATA}/.env`
+- Authenticated — check `flyctl auth whoami`. If not authed, use one of:
+  - `flyctl auth login` (browser, interactive)
+  - **Org token (preferred for agentic use)**: set `FLY_ORG_TOKEN` in `~/.claude/.env`. Generate at https://fly.io/dashboard → your org → Access Tokens → Create Org Token
+  - **Personal access token (wider scope, avoid)**: set `FLY_API_TOKEN` in `~/.claude/.env`. Generate at https://fly.io/user/personal_access_tokens
 - A `Dockerfile` in the project (or use `flyctl launch` to generate one)
+
+### Token scope (important)
+
+This skill is designed around an **organization-scoped token** (`FLY_ORG_TOKEN`) — lower blast radius than a personal access token.
+
+| Capability | Org token | Personal token |
+|---|---|---|
+| Deploy, read, write, manage secrets within **its own org** | ✅ | ✅ |
+| Access multiple orgs | ❌ (token is pinned to one org) | ✅ |
+| Create new orgs / manage billing | ❌ | ✅ |
+| Appropriate for agent automation | ✅ | ⚠️ overly broad |
+
+`flyctl` natively reads `FLY_API_TOKEN` only, so the skill shadows it at invocation:
+
+```bash
+export FLY_API_TOKEN="${FLY_ORG_TOKEN:-${FLY_API_TOKEN}}"
+```
+
+The skill verifies the token before any destructive-ish command by running `flyctl auth whoami` and reporting `token: Organization Token` so the user can confirm they're about to act with the scope they expect.
 
 ## Process
 
@@ -121,7 +143,8 @@ Live pricing: https://fly.io/docs/about/pricing/
 
 ## Common failure modes
 
-- **"App not found"** — wrong `-a` or not authed to correct org (`flyctl orgs list`)
+- **"App not found"** — wrong `-a`, or token is pinned to a different org than the app lives in. Run `flyctl orgs list` to confirm the token's org. Org tokens cannot reach apps in other orgs.
+- **"You must be authenticated"** via API/GraphQL — `FLY_API_TOKEN` isn't shadowed from `FLY_ORG_TOKEN`. Check with `echo "${FLY_API_TOKEN:-unset}"`.
 - **Build OOM** — bump builder with `flyctl deploy --vm-memory 2048` or upgrade machine size
 - **Healthcheck fails** — `internal_port` in `fly.toml` doesn't match what the container listens on
 - **Cert stuck in `awaiting_configuration`** — DNS record missing or wrong proxied flag (Fly needs unproxied / grey-cloud on Cloudflare for TLS termination)
