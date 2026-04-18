@@ -2,3 +2,10 @@
 .env.local
 .env.*.local
 .DS_Store
+
+# Local overrides (not committed)
+*.local.*
+*.local/
+
+# Playwright MCP (browser automation local state)
+.playwright-mcp/
