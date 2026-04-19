@@ -2,7 +2,7 @@
 name: new-tanstack-app
 description: Orchestrate scaffolding a new TanStack Start app on the canonical stack (TanStack Start + Drizzle + Cloudflare Workers + shadcn/ui). Dispatches to sub-skills for DB (D1 / Neon), auth (Better Auth), observability (PostHog, Sentry, UptimeRobot), DNS, and ship. Use when user wants to start, create, scaffold, bootstrap, or kick off a new TanStack Start project / small app / side project.
 category: project-setup
-argument-hint: <app-name> [--db d1|neon] [--auth] [--posthog] [--sentry] [--uptime] [--domain <host>] [--skip-deploy] [--interactive]
+argument-hint: <app-name> [--db d1|neon] [--auth] [--posthog] [--sentry] [--uptime] [--domain <host>] [--skip-deploy] [--skip-ci] [--interactive]
 allowed-tools: Bash(pnpm *) Bash(pnpx *) Bash(wrangler *) Bash(git *) Bash(corepack *) Bash(mkdir *) Bash(cd *) Bash(cp *) Read Write Edit
 ---
 
@@ -42,7 +42,8 @@ This skill is an **orchestrator** — it owns the baseline scaffolding (scaffold
   9. --uptime    → /ro:uptimerobot monitor create          (post-deploy)
  10. --domain    → /ro:cloudflare-dns add <host>           (post-deploy)
  11. deploy      → /ro:cf-ship                             (unless --skip-deploy)
- 12. final commit → /ro:commit                             (emoji format)
+ 12. GitHub CI  → add .github/workflows/ci.yml            (quality gate + auto-deploy)
+ 13. final commit → /ro:commit                             (emoji format)
 ```
 
 ## Prerequisites
@@ -177,7 +178,86 @@ Deferred to post-deploy. After the Worker is live:
 
 Run `/ro:cf-ship` for the full pre-flight gate: typecheck, lint, format, test, D1 migrations, secrets diff, build, deploy, smoke check. This replaces the inline `wrangler deploy` from the old version of this skill — the pre-flight gate is a big value-add and shouldn't be duplicated.
 
-### 13. Final commit — `/ro:commit`
+### 13. GitHub CI + auto-deploy (always, unless `--skip-ci`)
+
+Every app ships with CI from day one. Two jobs: a `test` job that runs on every push and PR (format + lint + build + test, collapsed into a single `pnpm quality` script), and a `deploy` job that runs only on push to main, gated on `test`, deploying to Cloudflare with secrets from the `production` environment.
+
+Create `.github/workflows/ci.yml`:
+
+```yaml
+name: CI
+on:
+  push: { branches: [main] }
+  pull_request:
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    name: Quality checks (format + lint + build + test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm quality
+  deploy:
+    name: Deploy to Cloudflare Workers
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Apply D1 migrations
+        run: pnpm wrangler d1 migrations apply <db-name> --remote
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Deploy worker
+        run: pnpm wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+```
+
+If `--posthog` / `--sentry` are set, add `--var` flags to the `wrangler deploy` step (reading from `secrets.SENTRY_DSN` and `secrets.POSTHOG_PROJECT_KEY`), matching the runtime-config pattern from step 8-9.
+
+Add a collapsing `quality` script to `package.json` so local + CI share one command:
+
+```json
+"scripts": {
+  "quality": "pnpm run format && pnpm run lint && pnpm run build && pnpm run test"
+}
+```
+
+Push secrets to the `production` environment (needs a `gh` token with `repo` scope and admin on the environment — if it 401s, run `gh auth refresh -h github.com -s admin:repo_hook` and pass `--repo <owner>/<name>` explicitly):
+
+```bash
+gh secret set CLOUDFLARE_API_TOKEN --env production --repo <owner>/<repo> --body "$CLOUDFLARE_API_TOKEN"
+gh secret set CLOUDFLARE_ACCOUNT_ID --env production --repo <owner>/<repo> --body "$CLOUDFLARE_ACCOUNT_ID"
+# observability (if wired):
+gh secret set SENTRY_DSN --env production --repo <owner>/<repo> --body "$SENTRY_DSN"
+gh secret set POSTHOG_PROJECT_KEY --env production --repo <owner>/<repo> --body "$POSTHOG_PROJECT_KEY"
+```
+
+Why `environment: production` and not repo-level secrets: preview branches / PRs never see the deploy token. Required status checks can gate deploys per-environment. Audit log shows which env a secret was used in.
+
+Skip with `--skip-ci` if (and only if) the user explicitly doesn't want CI. Default is on.
+
+### 14. Final commit — `/ro:commit`
 
 Delegate to `/ro:commit` so the emoji format and weekday-timestamp rule are enforced.
 
