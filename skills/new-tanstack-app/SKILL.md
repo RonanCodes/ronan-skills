@@ -1,8 +1,8 @@
 ---
 name: new-tanstack-app
-description: Orchestrate scaffolding a new TanStack Start app on the canonical stack (TanStack Start + Drizzle + Cloudflare Workers + shadcn/ui). Dispatches to sub-skills for DB (D1 / Neon), auth (Better Auth), observability (PostHog, Sentry, UptimeRobot), DNS, and ship. Use when user wants to start, create, scaffold, bootstrap, or kick off a new TanStack Start project / small app / side project.
+description: Orchestrate scaffolding a new TanStack Start app on the canonical stack (TanStack Start + Drizzle + Cloudflare Workers + shadcn/ui). Dispatches to sub-skills for DB (D1 / Neon), auth (Better Auth), observability (PostHog, Sentry, UptimeRobot), DNS, ship; plus optional agentic runtime (XState + Vercel AI SDK, LangGraph Phase-2 POA) and Knock notifications. Use when user wants to start, create, scaffold, bootstrap, or kick off a new TanStack Start project / small app / side project.
 category: project-setup
-argument-hint: <app-name> [--db d1|neon] [--auth] [--posthog] [--sentry] [--uptime] [--domain <host>] [--skip-deploy] [--skip-ci] [--interactive]
+argument-hint: <app-name> [--db d1|neon] [--auth] [--posthog] [--sentry] [--uptime] [--agent xstate|langgraph] [--ai-sdk] [--knock] [--domain <host>] [--skip-deploy] [--skip-ci] [--interactive]
 allowed-tools: Bash(pnpm *) Bash(pnpx *) Bash(wrangler *) Bash(git *) Bash(corepack *) Bash(mkdir *) Bash(cd *) Bash(cp *) Read Write Edit
 ---
 
@@ -18,9 +18,11 @@ Scaffold a new TanStack Start app, then dispatch to sub-skills for the pieces th
 /ro:new-tanstack-app my-app --db neon                    # Postgres via Neon instead of D1
 /ro:new-tanstack-app my-app --auth                       # + Better Auth
 /ro:new-tanstack-app my-app --posthog --sentry --uptime  # + full observability
+/ro:new-tanstack-app my-app --agent xstate --ai-sdk      # + XState decision machine + Vercel AI SDK (Anthropic/OpenAI/Gemini)
+/ro:new-tanstack-app my-app --knock                      # + Knock (multi-channel notifications: Slack + email + in-app)
 /ro:new-tanstack-app my-app --domain api.ronan.dev       # + custom domain via /ro:cloudflare-dns
 /ro:new-tanstack-app my-app --skip-deploy                # scaffold only, no D1 / no deploy
-/ro:new-tanstack-app my-app --db neon --auth --posthog --sentry --uptime --domain app.ronan.dev  # everything
+/ro:new-tanstack-app my-app --db neon --auth --agent xstate --ai-sdk --knock --posthog --sentry --uptime --domain app.ronan.dev  # full agentic app
 ```
 
 ## What it actually does
@@ -36,14 +38,18 @@ This skill is an **orchestrator** — it owns the baseline scaffolding (scaffold
   3. UI: tailwind + shadcn + lucide                       (inline)
   4. Testing: vitest + playwright + bruno dirs            (inline)
   5. Code hygiene: prettier + eslint + husky + commitlint (inline)
-  6. --auth      → /ro:better-auth install
-  7. --posthog   → /ro:posthog install --both
-  8. --sentry    → /ro:sentry install --tanstack + project create
-  9. --uptime    → /ro:uptimerobot monitor create          (post-deploy)
- 10. --domain    → /ro:cloudflare-dns add <host>           (post-deploy)
- 11. deploy      → /ro:cf-ship                             (unless --skip-deploy)
- 12. GitHub CI  → add .github/workflows/ci.yml            (quality gate + auto-deploy)
- 13. final commit → /ro:commit                             (emoji format)
+  6. --auth              → /ro:better-auth install
+  7. --ai-sdk            → install `ai` + `@ai-sdk/anthropic` + `@ai-sdk/openai` + `@ai-sdk/google`; scaffold `lib/models.ts`
+  8. --agent xstate      → install `xstate` + `@xstate/react`; scaffold a reference `machines/exampleMachine.ts` + actor using AI SDK
+  8b. --agent langgraph  → Phase-2 POA (not yet auto-scaffolded) — prints migration POA instead
+  9. --knock             → install `@knocklabs/node` + `@knocklabs/react`; scaffold `/api/notify` route stub
+ 10. --posthog   → /ro:posthog install --both
+ 11. --sentry    → /ro:sentry install --tanstack + project create
+ 12. --uptime    → /ro:uptimerobot monitor create          (post-deploy)
+ 13. --domain    → /ro:cloudflare-dns add <host>           (post-deploy)
+ 14. deploy      → /ro:cf-ship                             (unless --skip-deploy)
+ 15. GitHub CI  → add .github/workflows/ci.yml            (quality gate + auto-deploy)
+ 16. final commit → /ro:commit                             (emoji format)
 ```
 
 ## Prerequisites
@@ -58,6 +64,8 @@ This skill is an **orchestrator** — it owns the baseline scaffolding (scaffold
   - `--posthog` → `POSTHOG_PERSONAL_API_KEY`, `POSTHOG_HOST`, `POSTHOG_INGEST_HOST`
   - `--sentry` → `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_REGION_URL`
   - `--uptime` → `UPTIMEROBOT_API_KEY`
+  - `--ai-sdk` → at least one of `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY` (pushed to Worker as a secret, not `~/.claude/.env`-only)
+  - `--knock` → `KNOCK_API_KEY` (pushed as a Worker secret)
   - `--domain` → `CLOUDFLARE_API_TOKEN` with `Zone:DNS:Edit`
 
 ## Interactive mode (`--interactive`)
@@ -66,9 +74,12 @@ Runs an `AskUserQuestion` preamble to collect:
 
 1. **Database** — D1 (SQLite, default) or Neon (Postgres)?
 2. **Auth** — Better Auth or none?
-3. **Observability** — Which of [PostHog, Sentry, UptimeRobot]?
-4. **Custom domain** — `<host>` or skip?
-5. **Deploy now** — yes (via `/ro:cf-ship`) or scaffold-only?
+3. **Agent runtime** — None / XState (MVP: prescriptive decision machine) / LangGraph POA (Phase 2 migration notes only)?
+4. **LLM provider abstraction** — Install Vercel AI SDK + provider packs?
+5. **Notifications** — Knock (multi-channel) / Resend-only / none?
+6. **Observability** — Which of [PostHog, Sentry, UptimeRobot]?
+7. **Custom domain** — `<host>` or skip?
+8. **Deploy now** — yes (via `/ro:cf-ship`) or scaffold-only?
 
 Answers are converted to flags and the non-interactive flow proceeds. Use this as the default when a user invokes without flags AND without `--skip-interactive`.
 
@@ -141,7 +152,74 @@ pnpm dlx husky init
 Delegate to `/ro:better-auth install`. Afterwards:
 - Remind user: `BETTER_AUTH_SECRET` generated via `openssl rand -base64 32` lives in `.dev.vars` + `wrangler secret put` — NOT in `~/.claude/.env`.
 
-### 8. `--posthog` → `/ro:posthog install --both`
+### 7a. `--ai-sdk` → Vercel AI SDK (provider abstraction)
+
+```bash
+pnpm add ai @ai-sdk/anthropic @ai-sdk/openai @ai-sdk/google zod
+```
+
+Scaffold `src/lib/models.ts`:
+
+```ts
+import { anthropic } from "@ai-sdk/anthropic";
+import { openai } from "@ai-sdk/openai";
+import { google } from "@ai-sdk/google";
+
+export const models = {
+  primary: anthropic("claude-opus-4-7"),
+  fast: anthropic("claude-haiku-4-5-20251001"),
+  alternate: openai("gpt-5"),
+  cheap: google("gemini-2.5-flash"),
+} as const;
+```
+
+Scaffold `src/routes/api/chat.ts` as a reference `streamText` endpoint using `toDataStreamResponse()`. Prompt-caching breakpoints via `providerOptions: { anthropic: { cacheControl: { type: "ephemeral" } } }`. Document in `ARCHITECTURE.md` that provider swap = change one import in `lib/models.ts`.
+
+Push provider keys as Worker secrets: `wrangler secret put ANTHROPIC_API_KEY` (and/or OPENAI/GOOGLE).
+
+### 7b. `--agent xstate` → XState decision machine
+
+```bash
+pnpm add xstate @xstate/react
+```
+
+Scaffold `src/machines/exampleMachine.ts` — a prescriptive state machine with one `fromPromise` actor calling `generateObject` (if `--ai-sdk` also set) for typed classification. Scaffold `src/components/Machine.tsx` using `useMachine`. Wire a reference route `src/routes/machine.tsx`.
+
+If `--auth` is also set, the example machine reads `client_id` from `auth.api.getActiveMember()` and passes it in machine context for future RLS-scoped tool calls.
+
+### 7c. `--agent langgraph` → Phase-2 POA (no auto-scaffold)
+
+Don't install LangGraph today on Cloudflare Workers — the stock `@langchain/langgraph-checkpoint-postgres` uses `pg` TCP and will not run. Instead print a migration POA to stdout covering:
+
+- Use XState at the top level; invoke a LangGraph workflow from an XState actor when a sub-tree needs free-form agentic planning.
+- Checkpointer options on Workers: D1 adapter, Neon-HTTP custom checkpointer, or Durable Object per-session storage (preferred).
+- Add LangSmith (`LANGSMITH_API_KEY`) when the first LangGraph workflow ships; before that, Sentry + PostHog telemetry is sufficient.
+
+### 7d. `--knock` → Knock notifications (multi-channel)
+
+```bash
+pnpm add @knocklabs/node @knocklabs/react
+```
+
+Scaffold `src/routes/api/notify.ts`:
+
+```ts
+import { Knock } from "@knocklabs/node";
+export const APIRoute = createAPIFileRoute("/api/notify")({
+  POST: async ({ request }) => {
+    const knock = new Knock(env.KNOCK_API_KEY);
+    const { workflow, recipients, data } = await request.json();
+    await knock.workflows.trigger(workflow, { recipients, data });
+    return new Response(null, { status: 204 });
+  },
+});
+```
+
+Push `wrangler secret put KNOCK_API_KEY`. Document expected workflow IDs in `ARCHITECTURE.md` so product/design can create them in Knock's UI.
+
+Note: Resend for transactional email is still installed via the baseline scaffold when `--knock` is set alongside — Knock can delegate the email channel to Resend.
+
+### 8. `--posthog` → /ro:posthog install --both
 
 Delegate. Client + server SDK. For public-facing apps, prefer **runtime config injection** over `VITE_*` (see "Runtime-injected observability" below) — the key still ships to browsers either way, but runtime injection means forks don't ship your key and rotations don't need a rebuild.
 
@@ -276,6 +354,9 @@ Print the following after everything runs:
 - App name + directory
 - DB: D1 database ID, OR Neon project ID + branch
 - Auth: enabled / disabled
+- Agent runtime: XState (scaffolded reference machine) / LangGraph POA printed / none
+- LLM provider abstraction: Vercel AI SDK installed + configured providers
+- Notifications: Knock workspace wired / Resend-only / none
 - Observability wired: PostHog flag, Sentry project slug + DSN source, UptimeRobot monitor ID
 - Deployed URL + custom domain (if `--domain`)
 - Next-step suggestions: add more shadcn components, write first Server Function, `pnpm dev`
