@@ -191,17 +191,22 @@ deploy:
 Then set secrets on the `production` environment (not repo-level, so non-main branches can't read them):
 
 ```bash
-gh secret set CLOUDFLARE_API_TOKEN --env production --body "$CLOUDFLARE_API_TOKEN"
-gh secret set CLOUDFLARE_ACCOUNT_ID --env production --body "$CLOUDFLARE_ACCOUNT_ID"
+set -a && source ~/.claude/.env && set +a
+unset GITHUB_TOKEN GH_TOKEN   # see gotcha below
+REPO=<owner>/<repo>
+
+gh secret set CLOUDFLARE_API_TOKEN --env production --repo $REPO --body "$CLOUDFLARE_API_TOKEN"
+gh secret set CLOUDFLARE_ACCOUNT_ID --env production --repo $REPO --body "$CLOUDFLARE_ACCOUNT_ID"
 ```
 
-If the current `gh` token can't set env secrets (HTTP 401 on public-key fetch), run:
+### `HTTP 401: Bad credentials` on `gh secret set`
 
-```bash
-gh auth refresh -h github.com -s admin:repo_hook
-```
+Two causes, in this order of likelihood:
 
-Then retry.
+1. **`GITHUB_TOKEN` from `~/.claude/.env` is shadowing the gh keychain.** Sourcing `~/.claude/.env` to pull `CLOUDFLARE_API_TOKEN` also loads `GITHUB_TOKEN`, and gh prefers env-var auth over the keychain. If that env token has narrower scopes, you get `HTTP 401: Bad credentials` on the public-key fetch — even though `gh api` on the same endpoint works. Fix: `unset GITHUB_TOKEN GH_TOKEN` right after sourcing, before any gh call.
+2. **Actual scope gap.** Classic PAT is missing what's needed for env secrets. Fix: `gh auth refresh -h github.com -s admin:repo_hook`.
+
+Always pass `--repo <owner>/<name>` explicitly when calling from a subshell or a directory where the remote isn't obvious — gh's repo auto-detection is flaky.
 
 ## Safety
 

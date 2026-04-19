@@ -243,14 +243,22 @@ Add a collapsing `quality` script to `package.json` so local + CI share one comm
 }
 ```
 
-Push secrets to the `production` environment (needs a `gh` token with `repo` scope and admin on the environment — if it 401s, run `gh auth refresh -h github.com -s admin:repo_hook` and pass `--repo <owner>/<name>` explicitly):
+Push secrets to the `production` environment.
+
+**Gotcha — `GITHUB_TOKEN` in `~/.claude/.env` shadows gh's keychain auth.** If the script sources `~/.claude/.env` to read `CLOUDFLARE_API_TOKEN` (etc.), `GITHUB_TOKEN` from that file takes priority over the keychain-stored gh token, and `gh secret set` fails with `HTTP 401: Bad credentials` on the public-key endpoint — even though `gh api` works on the same URL. Fix: `unset GITHUB_TOKEN GH_TOKEN` right after sourcing, before any gh call.
+
+Needs a `gh` token with `repo` scope and admin on the environment — if it 401s despite the unset, run `gh auth refresh -h github.com -s admin:repo_hook` and pass `--repo <owner>/<name>` explicitly:
 
 ```bash
-gh secret set CLOUDFLARE_API_TOKEN --env production --repo <owner>/<repo> --body "$CLOUDFLARE_API_TOKEN"
-gh secret set CLOUDFLARE_ACCOUNT_ID --env production --repo <owner>/<repo> --body "$CLOUDFLARE_ACCOUNT_ID"
+set -a && source ~/.claude/.env && set +a
+unset GITHUB_TOKEN GH_TOKEN   # required — see gotcha above
+REPO=<owner>/<repo>
+
+gh secret set CLOUDFLARE_API_TOKEN --env production --repo $REPO --body "$CLOUDFLARE_API_TOKEN"
+gh secret set CLOUDFLARE_ACCOUNT_ID --env production --repo $REPO --body "$CLOUDFLARE_ACCOUNT_ID"
 # observability (if wired):
-gh secret set SENTRY_DSN --env production --repo <owner>/<repo> --body "$SENTRY_DSN"
-gh secret set POSTHOG_PROJECT_KEY --env production --repo <owner>/<repo> --body "$POSTHOG_PROJECT_KEY"
+gh secret set SENTRY_DSN --env production --repo $REPO --body "$SENTRY_DSN"
+gh secret set POSTHOG_PROJECT_KEY --env production --repo $REPO --body "$POSTHOG_PROJECT_KEY"
 ```
 
 Why `environment: production` and not repo-level secrets: preview branches / PRs never see the deploy token. Required status checks can gate deploys per-environment. Audit log shows which env a secret was used in.
