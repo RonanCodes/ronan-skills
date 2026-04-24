@@ -1,8 +1,8 @@
 ---
 name: design-system-create
-description: Scaffold a design system in a React/Tailwind project — DESIGN_SYSTEM.md spec + typed tokens module + cva variants for core primitives (Button, Input, Card). Use when a project has hand-rolled Tailwind for buttons/inputs/cards and needs a single source of truth. Pairs with /ro:design-system-audit for enforcement.
+description: Scaffold a design system in a React/Tailwind project — DESIGN_SYSTEM.md spec + typed tokens module + cva variants for core primitives (Button, Input, Card). Optionally emit a hidden /design-system showcase route. Use when a project has hand-rolled Tailwind for buttons/inputs/cards and needs a single source of truth. Pairs with /ro:design-system-audit for enforcement.
 category: frontend
-argument-hint: [--primitives=button,input,card] [--typescript|--js]
+argument-hint: [--primitives=button,input,card] [--showcase] [--showcase-only] [--typescript|--js]
 ---
 
 # Design System — Create
@@ -22,6 +22,8 @@ The skill generates these in that order, and leaves the project with zero hex va
 ```
 /ro:design-system-create                          # interactive — inspect repo, propose layout
 /ro:design-system-create --primitives=button,input,card
+/ro:design-system-create --showcase               # also emit /design-system hidden route
+/ro:design-system-create --showcase-only          # ONLY add showcase to an existing DS
 /ro:design-system-create --dry-run                # show what would be written, don't write
 ```
 
@@ -52,6 +54,7 @@ Via `AskUserQuestion`, confirm:
 3. **Elevation style** — border-only (NYT/modern flat), or borders + shadows (material)?
 4. **Active-state feedback** — `translate-y-px` + darker bg (recommended), or fade only?
 5. **Primitives to generate** — Button, Input, Card, Badge, Dialog (default: Button + Input + Card)
+6. **Showcase route** — generate a hidden `/design-system` page that renders every token + primitive? (default: yes — it's the cheapest way to keep the spec honest)
 
 ### 3. Write the CSS layer
 
@@ -192,7 +195,47 @@ The six core rules (lift verbatim unless the project has a well-reasoned deviati
 5. Colour comes from tokens, never from hex. If you need a colour the theme doesn't have, add a token; don't inline.
 6. One radius scale. `rounded-sm` (badges), `rounded-md` (buttons/inputs), `rounded-lg`/`xl` (cards), `rounded-full` (pills). No `rounded-[7px]` one-offs.
 
-### 7. Report
+### 7. Showcase route (optional, recommended)
+
+If the user opted in (or `--showcase` / `--showcase-only`), emit a hidden page that renders every token and primitive so the system is auditable in-browser across themes.
+
+**Where to write it:**
+- TanStack Router file-based: `src/routes/design-system.tsx` (route = `/design-system`)
+- Next.js app router: `app/design-system/page.tsx`
+- React Router / Vite: `src/pages/DesignSystem.tsx` + register in the router manually
+- If the router can't be detected, abort this step and tell the user where to drop the file
+
+**Rules for the showcase file:**
+- Never link to it from nav, footer, or sitemap — discoverable only via URL
+- Use ONLY the project's own primitives (Button, Input, Badge, Card) and tokens (TYPOGRAPHY, RADIUS, ELEVATION, SPACING, Z) — no hand-rolled styles. The showcase is itself the first audit subject.
+- Include a theme-picker at the top that calls the project's `setTheme` (detect from `src/lib/themes/index.ts` — if absent, skip the picker silently)
+- Every section pairs a live example with the token/variant name it uses, so copy-paste works
+
+**Required sections (in order):**
+
+1. **Header** — page title, "hidden route" note, theme-picker (if themes exist)
+2. **Colour tokens** — render every semantic pair (`bg-background`/`text-foreground`, `bg-card`/`text-card-foreground`, etc.) as labelled swatches. Names match the `@theme inline` bridge.
+3. **Typography** — one row per `TYPOGRAPHY.*` key, token name on the left, rendered sample on the right (use "The quick brown fox…")
+4. **Radius** — a square for each `RADIUS.*` value with the key as caption
+5. **Elevation** — a card for each `ELEVATION.*` tier
+6. **Buttons — variants × sizes** — a row per variant (default, secondary, outline, ghost, link, destructive) with every size + a disabled + an icon-included example. The user physically clicks to verify hover/active/focus
+7. **Icon buttons** — size-icon-xs/sm/default/lg in outline, plus destructive + a spinning loader
+8. **Toggle button** — one Button with `aria-pressed` state toggled via local state, showing the recommended filled+bordered on-state
+9. **Inputs** — default, disabled, `aria-invalid`, with-value (in a 2-col grid)
+10. **Badges** — one per variant
+11. **Cards** — two Card examples demonstrating CardHeader/Title/Description/Content + actions
+12. **Spacing scale** — bars sized by each `SPACING.*` value with px readout
+13. **Z-index scale** — labelled pills showing key + numeric value
+14. **Footer** — link to `DESIGN_SYSTEM.md` (relative to repo host if known)
+
+**Why it earns its keep:**
+- New theme? Load `/design-system` and eyeball every primitive in 30 seconds
+- Adding a component? Copy the section pattern, stay consistent
+- Audit blind spot? If a state looks wrong here, it looks wrong everywhere — first place reviewers check
+
+See `docs/showcase-template.tsx` in the repo where this skill was developed (connections-helper `src/routes/design-system.tsx`) for a canonical reference implementation.
+
+### 8. Report
 
 Print what was written:
 
@@ -206,11 +249,13 @@ Created:
   src/components/ui/button.tsx        — cva variants with state table
   src/components/ui/input.tsx         — matches button state treatment
   src/components/ui/card.tsx          — elevation tiers
+  src/routes/design-system.tsx        — hidden /design-system showcase (if --showcase)
 
 Next:
-  1. Run /ro:design-system-audit to find callers that need migrating
-  2. Review DESIGN_SYSTEM.md — deviate where your brand demands it
-  3. Commit the scaffold before starting migrations
+  1. Visit /design-system in dev to verify the scaffold renders cleanly across themes
+  2. Run /ro:design-system-audit to find callers that need migrating
+  3. Review DESIGN_SYSTEM.md — deviate where your brand demands it
+  4. Commit the scaffold before starting migrations
 ```
 
 ## Design decisions this skill bakes in
