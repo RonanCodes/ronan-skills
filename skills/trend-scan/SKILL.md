@@ -31,7 +31,7 @@ The natural loop: `/ro:trend-scan` → pick a theme → `/ro:trend-scan "<theme>
 
 ## Defaults
 
-- **Sources:** `hn,x,reddit` (LinkedIn is opt-in — cookie auth required)
+- **Sources:** `hn,reddit,youtube,producthunt` (X and LinkedIn are opt-in — X because nitter mirrors are currently dead, LinkedIn because cookie auth is required)
 - **Window:** `7d`
 - **Limit:** 10 items per source in deep-dive; 10 themes total in discover
 
@@ -42,6 +42,8 @@ Use this when the caller hasn't named a topic yet.
 1. **Fan out** — pull the most-recent/highest-engagement feed from each source:
    - HN: `/ro:hn-scan frontpage --limit 30` + `/ro:hn-scan show --since 7d --limit 15`
    - Reddit: hit 4–6 curated subs via `/ro:reddit-scan r/<sub> --sort top --since week --limit 10` each. Default sub set: `r/LocalLLaMA`, `r/ClaudeAI`, `r/singularity`, `r/programming`, `r/hackernews`, `r/OpenAI`
+   - YouTube: `/ro:youtube-scan` in discover mode — runs 3 seed searches (`AI`, `coding`, `new tool`), dedupe by URL, sort by views
+   - Product Hunt: `/ro:producthunt-scan` — today's feed, cluster by theme keywords
    - X: `/ro:x-scan "search:AI"` (or a set of broad seeds) — be ready for nitter failure, skip cleanly
 2. **Normalise** — same shape as deep-dive (see below).
 3. **Extract themes** — cluster titles/gists into themes:
