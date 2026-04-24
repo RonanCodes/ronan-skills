@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# Auto-bump plugin version when the pending commit touches skills/.
+# - New skill directories added → bump minor (1.1.0 → 1.2.0)
+# - Existing skills modified    → bump patch (1.1.0 → 1.1.1)
+# - No skills/ changes          → no-op
+#
+# Runs pre-commit (not pre-push) so the version bump is part of the same commit
+# as the skills change. A pre-push amend would be too late: by the time the hook
+# runs, git has already computed the ref to push and won't re-read the amended
+# SHA, causing local/remote drift.
+
+set -euo pipefail
+
+PLUGIN_JSON=".claude-plugin/plugin.json"
+MARKET_JSON=".claude-plugin/marketplace.json"
+
+[[ -f "$PLUGIN_JSON" ]] || exit 0
+
+# Staged files only (what's about to be committed). Covers SKILL.md, supporting
+# scripts, reference/ docs, resources — anything under skills/.
+CHANGED_SKILLS=$(git diff --cached --name-only -- skills/ 2>/dev/null || true)
+[[ -z "$CHANGED_SKILLS" ]] && exit 0
+
+# Treat a brand-new SKILL.md as a new skill directory (minor bump).
+NEW_SKILLS=$(git diff --cached --diff-filter=A --name-only -- 'skills/*/SKILL.md' 2>/dev/null || true)
+
+CURRENT=$(grep '"version"' "$PLUGIN_JSON" | sed 's/.*"\([0-9]*\.[0-9]*\.[0-9]*\)".*/\1/')
+IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+
+if [[ -n "$NEW_SKILLS" ]]; then
+  MINOR=$((MINOR + 1))
+  PATCH=0
+else
+  PATCH=$((PATCH + 1))
+fi
+
+NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+
+# Skip if this commit already bumps plugin.json to the target version (e.g. a
+# manual bump being committed on its own).
+if git diff --cached -- "$PLUGIN_JSON" | grep -q "\"version\": \"$NEW_VERSION\""; then
+  exit 0
+fi
+
+sed -i '' "s/\"version\": \"$CURRENT\"/\"version\": \"$NEW_VERSION\"/" "$PLUGIN_JSON"
+
+# Keep the marketplace description's skill count in sync.
+# Use [0-9][0-9]* (one-or-more) instead of [0-9]* so the empty match before
+# " skills" doesn't swallow the preceding space.
+if [[ -f "$MARKET_JSON" ]]; then
+  SKILL_COUNT=$(find skills -maxdepth 2 -name SKILL.md 2>/dev/null | wc -l | tr -d ' ')
+  sed -i '' "s/[0-9][0-9]* skills/$SKILL_COUNT skills/g" "$MARKET_JSON" 2>/dev/null || true
+  git add "$MARKET_JSON"
+fi
+
+git add "$PLUGIN_JSON"
+
+echo "🔖 Auto-bumped plugin version: $CURRENT → $NEW_VERSION (skills/ changed)"
+
+exit 0
