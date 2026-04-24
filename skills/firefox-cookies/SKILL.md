@@ -10,6 +10,8 @@ allowed-tools: Bash(sqlite3 *) Bash(ls *) Bash(find *) Bash(cp *) Bash(rm *) Rea
 
 Extract cookies from Firefox's local storage for a given domain. Used by other skills (like ingest-linkedin) for authenticated fetching.
 
+> **Prefer `ro:browser-cookies`** — the generalized sibling that also handles Brave, Chrome, Arc, Edge (Chromium browsers via macOS Keychain). This skill stays for back-compat and for Firefox-only setups. On macOS where Firefox isn't installed (e.g., Brave-only), this skill will error out — use `ro:browser-cookies` instead.
+
 ## Usage
 
 Called by other skills with a target domain. Returns a `Cookie:` header string.

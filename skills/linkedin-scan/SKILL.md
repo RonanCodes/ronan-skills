@@ -1,6 +1,6 @@
 ---
 name: linkedin-scan
-description: Scan LinkedIn posts for a URL or pasted content, or fetch recent posts by a person/company. Uses cookie auth via firefox-cookies if available, otherwise pasted-text fallback. Returns findings without vault persistence. Sibling to llm-wiki/ingest-linkedin.
+description: Scan LinkedIn posts for a URL or pasted content, or fetch recent posts by a person/company. Uses cookie auth via browser-cookies (Firefox/Brave/Chrome/Arc) when available, otherwise pasted-text fallback. Returns findings without vault persistence. Sibling to llm-wiki/ingest-linkedin.
 category: research
 argument-hint: <linkedin-url | "paste" | @person-slug> [--limit N]
 allowed-tools: Bash(curl *) Read
@@ -28,7 +28,7 @@ LinkedIn is unfriendly to scrapers (auth wall, HTML churn, anti-bot). Expect pas
 
 ## URL mode (cookie auth)
 
-1. Get cookies for `linkedin.com` via the `firefox-cookies` skill
+1. Get cookies for `linkedin.com` via the `browser-cookies` skill (falls back to `firefox-cookies` if browser-cookies isn't available)
 2. Fetch:
    ```bash
    curl -sL \
@@ -75,11 +75,13 @@ Never echo back cookie values or session tokens in output.
 ## Dependencies
 
 - `curl` — always
-- `firefox-cookies` skill — required for URL / profile-feed modes
+- `browser-cookies` skill — required for URL / profile-feed modes (or legacy `firefox-cookies` for Firefox-only setups)
 
 ## See also
 
 - `llm-wiki/.claude/skills/ingest-linkedin` — persists LinkedIn posts into a vault with full YAML frontmatter and wiki source-notes. Use when you want to keep the content.
 - `/ro:trend-scan` — orchestrator.
 - `/ro:hn-scan`, `/ro:x-scan`, `/ro:reddit-scan` — other source scanners.
-- `firefox-cookies` — cookie extraction.
+- `browser-cookies` — cookie extraction (current); `firefox-cookies` — legacy Firefox-only fallback.
+- `/ro:linkedin` — write path (official API: posts + draft-mode edits).
+- `/ro:linkedin-voyager` — ToS-grey read path via unofficial Voyager API (bio, experience, full profile).
