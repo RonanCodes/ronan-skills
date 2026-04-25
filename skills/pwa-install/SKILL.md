@@ -235,20 +235,42 @@ export function InstallPrompt() {
 
 ## Icon generation
 
-If icons don't exist yet:
+⚠️ **The single most important step.** Browsers pick the **maskable** icon for the install prompt. If `icon-maskable-512.png` is blank or a flat colour, the install dialog renders a solid square with no glyph — and users dismiss without installing. Verified-on-the-wild bug: `connections-helper` shipped with a flat green-500 maskable tile and silently looked broken to every new install for 24h.
+
+**Always view the rendered PNGs before declaring done:**
 
 ```bash
-# Using pwa-asset-generator (no install, via npx):
+file public/icons/*.png  # confirm bit depth > 1 and reasonable file sizes (≥ 5 KB)
+open public/icons/icon-maskable-512.png  # macOS — eyeball it
+```
+
+A 1-bit / sub-1KB icon is a placeholder, not real artwork. Same for any solid-colour tile.
+
+### Recipe: render real icons from a master SVG
+
+The cleanest pattern is one master SVG that renders to all three sizes (so future tweaks don't drift). Drop it at `public/icons/icon.svg` and render with ImageMagick:
+
+```bash
+magick -background none public/icons/icon.svg -resize 192x192 public/icons/icon-192.png
+magick -background none public/icons/icon.svg -resize 512x512 public/icons/icon-512.png
+magick -background none public/icons/icon.svg -resize 512x512 public/icons/icon-maskable-512.png
+```
+
+**Maskable safe zone.** Android crops to a circle of radius 40% (diameter 80%) of the canvas centre. Keep the visual content within an inner square of ~78% of the canvas (~12% margin per side on a 512×512). Background must be **full-bleed** with no transparent corners — the OS does the rounding, your file shouldn't.
+
+**If no logo exists yet**, lean into the app's domain. For a colour-themed app (puzzle helper, calendar tool, palette utility) a thematic abstract pattern works fine — connections-helper uses a 4-row grid in the NYT Connections palette and reads instantly. Plain "first letter on coloured background" is a fallback only.
+
+### Alternative: pwa-asset-generator from an existing logo
+
+```bash
 npx pwa-asset-generator ./src/assets/logo.svg ./public/icons \
   --manifest ./public/manifest.webmanifest \
   --background "#ffffff" \
   --padding "10%" \
   --icon-only
-
-# Or manually with ImageMagick from a square source image:
-magick logo.png -resize 192x192 public/icons/icon-192.png
-magick logo.png -resize 512x512 public/icons/icon-512.png
 ```
+
+Useful when there's already a designed logo. Still verify the output PNGs by eye before shipping — the tool is happy to produce blank tiles if the source SVG has no fill.
 
 ## Testing
 
