@@ -114,7 +114,7 @@ rg -n '—|–|\bdelve\b|\bleverage\b|\brobust\b|\bseamless\b|\btapestry\b|\blan
 
 Models to emulate, not boilerplate to copy verbatim.
 
-### Becca's launch voice: Connections Helper on LinkedIn
+### Friend-style launch voice: Connections Helper on LinkedIn
 
 > Are you ever stumped by Connections because you don't know a word's meaning? Then check out this app I made called Connections Helper: https://lnkd.in/eTjTe4Ev
 >
