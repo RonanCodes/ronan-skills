@@ -1,0 +1,31 @@
+meta {
+  name: transcribe
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/v3-5/transcribe
+  body: multipartForm
+  auth: none
+}
+
+headers {
+  Origin: {{origin}}
+  Referer: {{referer}}
+  User-Agent: {{userAgent}}
+  Accept: */*
+}
+
+body:multipart-form {
+  file: @file(./samples/cailleach-greeting.wav)
+}
+
+docs {
+  Transcribe an Irish-language audio file. Drop a WAV / WebM / MP3 sample into
+  ./samples/ and update the file: line above. Round-trip test: synthesize via
+  /ro:tts-abair, save the WAV to ./samples/, then run this request.
+
+  Expected response shape:
+    { "text": "...", "captpunct_applied": true|false }
+}

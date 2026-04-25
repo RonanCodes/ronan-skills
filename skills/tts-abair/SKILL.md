@@ -42,19 +42,21 @@ Flags:
 
 Voice IDs follow the pattern `ga_<DIALECT>_<VOICE>_<ENGINE>`:
 
-| Alias | Voice ID | Dialect | Engine | Notes |
-|---|---|---|---|---|
-| `connacht-female` (default) | `ga_CO_snc_piper` | Connacht (Connemara) | Piper | Sibéal, modern neural voice. The default abair web demo uses this. |
-| `connacht-female-hts` | `ga_CO_snc_exthts` | Connacht | HTS | Same voice, older HTS engine |
-| `connacht-male-hts` | `ga_CO_pmc_exthts` | Connacht | HTS | Male voice, HTS only |
-| `munster-female` | `ga_MU_nnc_piper` | Munster | Piper | Modern neural |
-| `munster-female-hts` | `ga_MU_nnc_exthts` | Munster | HTS | |
-| `munster-male-1` | `ga_MU_cmg_piper` | Munster | Piper | |
-| `munster-male-2` | `ga_MU_dms_piper` | Munster | Piper | |
-| `munster-fnm` | `ga_MU_ar_fnm` | Munster | FNM | Older alternate engine |
-| `ulster-female` | `ga_UL_anb_piper` | Ulster (Donegal) | Piper | Modern neural |
-| `ulster-female-hts` | `ga_UL_anb_exthts` | Ulster | HTS | |
-| `ulster-male` | `ga_UL_doc_piper` | Ulster | Piper | |
+| Alias | Voice ID | Voice name | Dialect | Engine | Notes |
+|---|---|---|---|---|---|
+| `connacht-female-sibeal` (default) | `ga_CO_snc_piper` | Sibéal | Connacht (Connemara) | Piper | Modern neural. The default abair web demo voice. |
+| `connacht-female-sibeal-hts` | `ga_CO_snc_exthts` | Sibéal | Connacht | HTS | Same voice, older HTS engine |
+| `connacht-male-padraig` | `ga_CO_pmc_exthts` | Pádraig | Connacht | HTS | HTS only |
+| `munster-female-neasa` | `ga_MU_nnc_piper` | Neasa | Munster | Piper | Modern neural |
+| `munster-female-neasa-hts` | `ga_MU_nnc_exthts` | Neasa | Munster | HTS | |
+| `munster-male-colm` | `ga_MU_cmg_piper` | Colm | Munster | Piper | |
+| `munster-male-danny` | `ga_MU_dms_piper` | Danny | Munster | Piper | **Heritage voice.** Archived native-speaker recordings; treat with care, may have additional ethical constraints not visible in public terms. |
+| `munster-female-fianait-anrinn` | `ga_MU_ar_fnm_piper` | Fianait | Munster (An Rinn sub-dialect) | Piper | Distinct An Rinn flavour (Waterford Gaeltacht) |
+| `ulster-female-aine` | `ga_UL_anb_piper` | Áine | Ulster (Donegal) | Piper | Modern neural |
+| `ulster-female-aine-hts` | `ga_UL_anb_exthts` | Áine | Ulster | HTS | |
+| `ulster-male-donall` | `ga_UL_doc_piper` | Dónall | Ulster | Piper | |
+
+Short aliases like `connacht-female`, `munster-male`, `ulster-female` map to the default Piper voice for that combination (Sibéal, Colm, Áine).
 
 Pass either the alias (`connacht-female`) or the raw ID (`ga_CO_snc_piper`).
 
@@ -94,18 +96,22 @@ RATE_LIMIT_SEC=1
 
 ```bash
 case "$VOICE_ARG" in
-  connacht-female|sibeal)        VOICE_ID="ga_CO_snc_piper" ;;
-  connacht-female-hts)           VOICE_ID="ga_CO_snc_exthts" ;;
-  connacht-male-hts)             VOICE_ID="ga_CO_pmc_exthts" ;;
-  munster-female)                VOICE_ID="ga_MU_nnc_piper" ;;
-  munster-female-hts)            VOICE_ID="ga_MU_nnc_exthts" ;;
-  munster-male-1)                VOICE_ID="ga_MU_cmg_piper" ;;
-  munster-male-2)                VOICE_ID="ga_MU_dms_piper" ;;
-  munster-fnm)                   VOICE_ID="ga_MU_ar_fnm" ;;
-  ulster-female)                 VOICE_ID="ga_UL_anb_piper" ;;
-  ulster-female-hts)             VOICE_ID="ga_UL_anb_exthts" ;;
-  ulster-male)                   VOICE_ID="ga_UL_doc_piper" ;;
-  ga_*)                          VOICE_ID="$VOICE_ARG" ;;  # raw ID passthrough
+  # Connacht (Connemara)
+  connacht-female|connacht-female-sibeal|sibeal)                VOICE_ID="ga_CO_snc_piper" ;;
+  connacht-female-sibeal-hts|sibeal-hts)                        VOICE_ID="ga_CO_snc_exthts" ;;
+  connacht-male|connacht-male-padraig|padraig|padraig-hts)      VOICE_ID="ga_CO_pmc_exthts" ;;
+  # Munster
+  munster-female|munster-female-neasa|neasa)                    VOICE_ID="ga_MU_nnc_piper" ;;
+  munster-female-neasa-hts|neasa-hts)                           VOICE_ID="ga_MU_nnc_exthts" ;;
+  munster-male|munster-male-colm|colm)                          VOICE_ID="ga_MU_cmg_piper" ;;
+  munster-male-danny|danny)                                     VOICE_ID="ga_MU_dms_piper" ;;  # heritage
+  munster-female-fianait-anrinn|fianait|an-rinn)                VOICE_ID="ga_MU_ar_fnm_piper" ;;
+  # Ulster (Donegal)
+  ulster-female|ulster-female-aine|aine)                        VOICE_ID="ga_UL_anb_piper" ;;
+  ulster-female-aine-hts|aine-hts)                              VOICE_ID="ga_UL_anb_exthts" ;;
+  ulster-male|ulster-male-donall|donall)                        VOICE_ID="ga_UL_doc_piper" ;;
+  # Raw ID passthrough
+  ga_*)                                                         VOICE_ID="$VOICE_ARG" ;;
   *)
     echo "Unknown voice: $VOICE_ARG" >&2
     echo "Use --list-voices to see all options." >&2
