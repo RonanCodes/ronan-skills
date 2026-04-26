@@ -41,13 +41,23 @@ script:post-response {
 }
 
 docs {
+  ⚠ FIRST-RUN SETUP — Bruno → Preferences → Scripts → enable Developer Mode.
+  Without it, the post-response script's require('fs') is sandboxed off and
+  the auto-play silently no-ops (request still works, you just get JSON back
+  with no audio file written).
+
+  After editing this .bru: Collection → Close, then Open Collection again
+  so Bruno re-reads the file.
+
   Synthesise an Irish phrase. Response shape:
     { audioContent: "<base64 WAV>", phonemes: [...], origins: [...] }
 
-  Auto-play: the post-response script above decodes audioContent into
-    /tmp/abair-tts-<timestamp>.wav and opens it in your default player.
+  Auto-play (with Developer Mode on): the post-response script decodes
+  audioContent into /tmp/abair-tts-<timestamp>.wav and opens it.
   Manual: jq -r '.audioContent' resp.json | base64 -d > out.wav && open out.wav
   Skill:  /ro:abair-irish-api tts "<text>" --output /tmp/out.wav && open /tmp/out.wav
+  Or, on a saved JSON response:
+          /ro:abair-irish-api tts --from-json ~/Downloads/response.json
 
   Voice IDs follow ga_<DIALECT>_<VOICE>_<ENGINE>. See ../openapi.yaml or
   ../SKILL.md § tts for the full voice catalogue.
