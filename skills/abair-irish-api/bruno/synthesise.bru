@@ -17,12 +17,37 @@ headers {
   Accept: */*
 }
 
+script:post-response {
+  // Auto-decode the base64 audioContent and open the WAV in the default player.
+  // Requires Bruno's node-runtime access (Tools → Settings → Scripts → enabled).
+  // Falls back gracefully if disabled — just logs the path you'd save manually.
+  try {
+    const audioContent = res.body && res.body.audioContent;
+    if (!audioContent) {
+      console.log('No audioContent in response (status ' + res.status + ')');
+      return;
+    }
+    const fs = require('fs');
+    const { execSync } = require('child_process');
+    const out = '/tmp/abair-tts-' + Date.now() + '.wav';
+    fs.writeFileSync(out, Buffer.from(audioContent, 'base64'));
+    bru.setVar('lastAudio', out);
+    try { execSync('open ' + out); } catch (_) { /* non-mac, skip */ }
+    console.log('Wrote + opened: ' + out);
+  } catch (e) {
+    console.log('Post-response audio save skipped: ' + e.message);
+    console.log('Manual decode: jq -r .audioContent | base64 -d > out.wav && open out.wav');
+  }
+}
+
 docs {
   Synthesise an Irish phrase. Response shape:
     { audioContent: "<base64 WAV>", phonemes: [...], origins: [...] }
 
-  To save the audio to a file:
-    jq -r '.audioContent' resp.json | base64 -d > out.wav && open out.wav
+  Auto-play: the post-response script above decodes audioContent into
+    /tmp/abair-tts-<timestamp>.wav and opens it in your default player.
+  Manual: jq -r '.audioContent' resp.json | base64 -d > out.wav && open out.wav
+  Skill:  /ro:abair-irish-api tts "<text>" --output /tmp/out.wav && open /tmp/out.wav
 
   Voice IDs follow ga_<DIALECT>_<VOICE>_<ENGINE>. See ../openapi.yaml or
   ../SKILL.md § tts for the full voice catalogue.

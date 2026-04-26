@@ -63,9 +63,17 @@ The OpenAPI spec is the single source of truth. SKILL.md, Scalar, and Bruno are 
 ## Browse the spec
 
 ```bash
-# From the kit directory
-python3 -m http.server 8765
+# One-shot — starts the local server, opens Scalar in the browser, opens Bruno pointed at this kit
+/ro:abair-irish-api launch
+
+# Stop the server later
+/ro:abair-irish-api launch --stop
+
+# Or do it by hand
+cd ~/Dev/ronan-skills/skills/abair-irish-api
+python3 -m http.server 8765 &
 open http://localhost:8765/scalar.html
+open -a Bruno ./bruno/   # then Collection → Open Collection inside Bruno
 ```
 
 ## License

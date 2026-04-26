@@ -1,8 +1,8 @@
 ---
 name: abair-irish-api
-description: Wrap the abair.ie Irish-language speech stack (Trinity College Dublin) — text-to-speech, speech-to-text, and chat. Three subcommands (tts, stt, chat) over one shared kit (openapi.yaml + scalar.html + bruno/). Use for any Irish (Gaeilge) speech work; sibling to /ro:tts-elevenlabs and /ro:transcribe (neither has real Irish coverage).
+description: Wrap the abair.ie Irish-language speech stack (Trinity College Dublin) — text-to-speech, speech-to-text, and chat. Four subcommands (tts, stt, chat, launch) over one shared kit (openapi.yaml + scalar.html + bruno/). Use for any Irish (Gaeilge) speech work; sibling to /ro:tts-elevenlabs and /ro:transcribe (neither has real Irish coverage).
 user-invocable: true
-allowed-tools: Bash(curl *) Bash(jq *) Bash(base64 *) Bash(file *) Bash(ffmpeg *) Bash(which *) Bash(brew *) Bash(mkdir *) Bash(date *) Bash(cat *) Bash(wc *) Bash(stat *) Bash(sleep *) Read Write Glob
+allowed-tools: Bash(curl *) Bash(jq *) Bash(base64 *) Bash(file *) Bash(ffmpeg *) Bash(which *) Bash(brew *) Bash(mkdir *) Bash(date *) Bash(cat *) Bash(wc *) Bash(stat *) Bash(sleep *) Bash(python3 *) Bash(open *) Bash(lsof *) Bash(kill *) Read Write Glob
 content-pipeline:
   - pipeline:audio
   - platform:agnostic
@@ -18,21 +18,23 @@ One skill, three subcommands, wrapping Trinity College Dublin's [ABAIR initiativ
 | `tts` | ABAIR synthesis | `GET https://synthesis.abair.ie/api/synthesise` | Works |
 | `stt` | ABAIR-ÉIST / Fotheidil recognition | `POST https://recognition.abair.ie/v3-5/transcribe` | Works |
 | `chat` | COMHRÁ Irish chat | `POST https://abair.ie/api/s2s` | **WAA-protected, server-side calls fail** (documented for completeness) |
+| `launch` | Local kit viewer | n/a | Starts a local HTTP server, opens Scalar in the browser, opens Bruno pointed at the kit |
 
 The whole abair.ie speech surface lives in this one kit. Replaces the older split skills `/ro:tts-abair` and `/ro:stt-abair`.
 
 ## Usage
 
 ```
-/ro:abair-irish-api tts  "<irish text>"          [--voice <id|alias>] [--output <path>] [--mp3]
-/ro:abair-irish-api tts  --file lines.txt        [--voice <id|alias>] [--out-dir <path>] [--mp3]
-/ro:abair-irish-api stt  --audio <path>          [--out <path>] [--no-punctuation]
-/ro:abair-irish-api stt  --file manifest.json    [--out-dir <path>]
-/ro:abair-irish-api chat "<message>"             # will fail; see § Chat
+/ro:abair-irish-api tts    "<irish text>"          [--voice <id|alias>] [--output <path>] [--mp3]
+/ro:abair-irish-api tts    --file lines.txt        [--voice <id|alias>] [--out-dir <path>] [--mp3]
+/ro:abair-irish-api stt    --audio <path>          [--out <path>] [--no-punctuation]
+/ro:abair-irish-api stt    --file manifest.json    [--out-dir <path>]
+/ro:abair-irish-api chat   "<message>"             # will fail; see § Chat
+/ro:abair-irish-api launch [--port 8765] [--no-bruno] [--no-browser] [--stop]
 /ro:abair-irish-api --list-voices
 ```
 
-The first positional arg is always the subcommand (`tts | stt | chat`). Everything after that is subcommand-specific.
+The first positional arg is always the subcommand (`tts | stt | chat | launch`). Everything after that is subcommand-specific.
 
 ## License and ethics
 
@@ -269,6 +271,60 @@ echo "Unexpectedly worked. Response:" >&2
 cat /tmp/abair-chat-resp.json
 ```
 
+## Subcommand: `launch`
+
+One-shot kit launcher. Starts a local HTTP server in the skill directory, opens the Scalar viewer in the default browser (all three operations visible in the sidebar), and opens Bruno pointed at the `bruno/` collection. Useful when you want to play with the API surface without invoking subcommands one at a time.
+
+```bash
+SKILL_DIR="$(cd "$(dirname "$0")" && pwd)"   # the abair-irish-api kit dir
+PORT="${PORT:-8765}"
+
+# --stop: kill any server already on $PORT and exit
+if [ "$STOP" = "1" ]; then
+  PIDS=$(lsof -ti:"$PORT" 2>/dev/null || true)
+  [ -n "$PIDS" ] && kill -9 $PIDS && echo "Stopped server on :$PORT" || echo "No server on :$PORT"
+  exit 0
+fi
+
+# Bail early if port already taken (so we don't silently fail)
+if lsof -ti:"$PORT" >/dev/null 2>&1; then
+  echo "Port $PORT already in use. Run with --stop first, or pass --port <other>." >&2
+  exit 1
+fi
+
+# Start the server in the background, log to /tmp
+( cd "$SKILL_DIR" && python3 -m http.server "$PORT" >/tmp/abair-irish-api-launch.log 2>&1 & )
+sleep 1
+
+# Verify it came up
+if ! curl -sf -o /dev/null "http://localhost:$PORT/scalar.html"; then
+  echo "Server failed to start on :$PORT (see /tmp/abair-irish-api-launch.log)" >&2
+  exit 1
+fi
+echo "Scalar:  http://localhost:$PORT/scalar.html"
+
+# Open the viewers
+[ "$NO_BROWSER" = "1" ] || open "http://localhost:$PORT/scalar.html"
+[ "$NO_BRUNO"   = "1" ] || open -a Bruno "$SKILL_DIR/bruno/"
+
+cat <<EOM
+
+Bruno is open but does not auto-import the collection. Inside Bruno:
+  Collection → Open Collection → $SKILL_DIR/bruno/
+
+To stop the local server later:
+  /ro:abair-irish-api launch --stop
+EOM
+```
+
+Flags:
+- `--port <n>` — port for the local HTTP server. Default `8765`.
+- `--no-bruno` — skip launching Bruno (just serve Scalar).
+- `--no-browser` — skip opening Scalar in the default browser (just start the server).
+- `--stop` — kill any server already on `--port` and exit.
+
+The server runs detached. Stop it later with `--stop` or `lsof -ti:8765 | xargs kill -9`.
+
 ## When to use this vs other speech skills
 
 - **TTS:** use `abair-irish-api tts` for any Irish text. Use `/ro:tts-elevenlabs` for English NPC dialogue or any non-Irish language. Use OpenAI TTS for cheap single-voice English narration.
@@ -280,7 +336,7 @@ For a bilingual game like [llm-wiki/puca-isles](file:///Users/ronan/Dev/ai-proje
 ## Sister files in this kit
 
 - `openapi.yaml` — OpenAPI 3.1 spec covering all three endpoints. Two servers (synthesis + recognition + abair root). Single source of truth for the surface.
-- `scalar.html` — open in a browser for interactive docs (loads `openapi.yaml`). Sidebar lists all three operations.
+- `scalar.html` — open in a browser for interactive docs (loads `openapi.yaml`). Sidebar lists all three operations. Configured with `proxyUrl: https://proxy.scalar.com` so the **Send** button works despite abair.ie's CORS rules; without it, Scalar's API client would either be blocked by CORS or fall back to the page origin (returning a confusing `501` from the local Python server). Requests routed through Scalar's hosted proxy are public — fine for these unauthenticated abair endpoints, do not adopt this config for endpoints carrying secret tokens.
 - `bruno/` — [Bruno](https://www.usebruno.com/) collection. `synthesise.bru`, `transcribe.bru`, `chat.bru` (chat documented as expected-to-fail). Open the folder in Bruno via Collection → Open Collection.
 - `README.md` — explains how the four pieces fit together.
 
