@@ -20,7 +20,26 @@ Port an existing app to **TanStack Start + Drizzle + D1 + Cloudflare Workers**. 
 /ro:migrate-to-tanstack --keep-data             # plan data migration, not just schema
 ```
 
+> **Also useful when keeping the source framework.** If the user wants to keep Astro / Vite / Remix / etc. and only swap *host* to CF Workers, the host-adapter + `wrangler.jsonc` + GH Actions + `gh secret set --env production` + DNS-cutover steps in this skill (§ 0 credential-source, § 9 cut-over, "Custom domain: pre-delete conflicting DNS") still apply 1:1. Skip steps 4-7 (schema/server/UI/auth port) and treat it as a host migration.
+
 ## Process
+
+### 0. Source existing credentials (always run first)
+
+Before any "ask the user for an API token" step, grep `~/.claude/.env` for what's already onboarded. The user has a single env file with section headers per provider (CF, Sentry, PostHog, Neon, Uptimerobot, ElevenLabs, Anthropic, OpenAI, Knock, etc.) — token-paste UX is friction when the value is already there from a prior project.
+
+```bash
+grep -iE "^(CLOUDFLARE_|SENTRY_|POSTHOG_|UPTIMEROBOT_|NEON_|KNOCK_|ANTHROPIC_|OPENAI_|GOOGLE_GENERATIVE_|GH_TOKEN|GITHUB_TOKEN)=" ~/.claude/.env
+```
+
+When sourcing into the shell:
+
+```bash
+set -a && source ~/.claude/.env && set +a
+unset GH_TOKEN GITHUB_TOKEN   # required — see "GITHUB_TOKEN gotcha" in new-tanstack-app §13
+```
+
+Only ask the user to paste a token if grep returns nothing for that provider. This applies equally to: scaffolding new apps, migrations, audits, ad-hoc deploys.
 
 ### 1. Audit (never skip)
 

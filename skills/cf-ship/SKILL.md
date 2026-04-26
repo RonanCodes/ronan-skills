@@ -21,7 +21,15 @@ Deploy a Cloudflare Workers app (TanStack Start on Path C) with a pre-flight gat
 
 ## Prerequisites
 
-- `wrangler` authed: `wrangler whoami` must succeed. If not, run `wrangler login` or set `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` in `${CLAUDE_PLUGIN_DATA}/.env`
+- `wrangler` authed. Three options in priority order:
+  1. **`~/.claude/.env`** has `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` from `/ro:cloudflare-setup` (the default for this user). Source pattern:
+     ```bash
+     set -a && source ~/.claude/.env && set +a
+     unset GH_TOKEN GITHUB_TOKEN   # ~/.claude/.env shadows gh CLI keychain — must unset before any gh call
+     ```
+     Always grep this file BEFORE asking the user to paste a token or run `wrangler login` — for already-onboarded providers, the value is there.
+  2. `wrangler login` (browser OAuth) — fine for one-off interactive runs
+  3. `${CLAUDE_PLUGIN_DATA}/.env` (legacy, prefer `~/.claude/.env`)
 - `wrangler.toml` in repo root with a valid `main` or TanStack Start preset configured
 - Clean or near-clean git tree (skill warns on uncommitted changes)
 

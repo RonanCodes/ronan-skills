@@ -219,6 +219,31 @@ Then restart at step 2.
 | `could not find entrypoint ruleset` (10003) | No error — just means no rule has been created yet | Continue; first PUT creates it |
 | `Invalid API Token` on any call | Wrong token pasted, or trailing whitespace | Re-check the saved value with `grep ^CLOUDFLARE ~/.claude/.env` |
 
+## How other skills consume these tokens
+
+After this skill runs, `~/.claude/.env` is the source of truth for every Cloudflare token. Other skills (`/ro:cf-ship`, `/ro:cloudflare-dns`, `/ro:migrate-to-tanstack`, `/ro:new-tanstack-app`, `stack-audit`) **must** source from there before asking the user for a token. Pattern:
+
+```bash
+set -a && source ~/.claude/.env && set +a
+unset GH_TOKEN GITHUB_TOKEN  # ~/.claude/.env's GITHUB_TOKEN shadows gh CLI keychain — must unset
+```
+
+Then for the legacy `CLOUDFLARE_API_TOKEN` name (what wrangler reads):
+
+```bash
+export CLOUDFLARE_API_TOKEN=$CLOUDFLARE_API_TOKEN_ADMIN
+export CLOUDFLARE_ACCOUNT_ID
+pnpm exec wrangler deploy
+```
+
+For mirroring tokens into a GitHub repo's `production` environment so `deploy.yml` can use them:
+
+```bash
+gh api -X PUT repos/$OWNER/$REPO/environments/production  # idempotent
+printf '%s' "$CLOUDFLARE_API_TOKEN_ADMIN" | gh secret set CLOUDFLARE_API_TOKEN --env production -R $OWNER/$REPO
+printf '%s' "$CLOUDFLARE_ACCOUNT_ID"      | gh secret set CLOUDFLARE_ACCOUNT_ID --env production -R $OWNER/$REPO
+```
+
 ## What this skill does NOT handle
 
 - Rotating tokens — do that in the UI and update `~/.claude/.env` manually
