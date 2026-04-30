@@ -45,7 +45,7 @@ Only ask the user to paste a token if grep returns nothing for that provider. Th
 
 Report current stack before touching anything. Probe these files in parallel:
 
-- `package.json` — framework (`next`, `@remix-run`, `vite`, `nuxt`, `@tanstack/start`, `hono`, `express`), ORM (`prisma`, `drizzle-orm`, `@neondatabase/serverless`, raw `pg`/`better-sqlite3`), auth (`better-auth`, `@clerk/*`, `next-auth`, `@auth/core`, `lucia`)
+- `package.json`: framework (`next`, `@remix-run`, `vite`, `nuxt`, `@tanstack/start`, `hono`, `express`), ORM (`prisma`, `drizzle-orm`, `@neondatabase/serverless`, raw `pg`/`better-sqlite3`), auth (`@workos-inc/node`, `@workos-inc/authkit-react`, `better-auth`, `@clerk/*`, `next-auth`, `@auth/core`, `lucia`)
 - `fly.toml` / `vercel.json` / `netlify.toml` / `wrangler.toml` — deploy target
 - `.env*` files — current secrets surface (don't print values, just keys)
 - `prisma/schema.prisma`, `db/schema.ts`, `drizzle.config.ts` — schema source
@@ -60,7 +60,7 @@ Current stack:
   Routing:    <file-based / programmatic>
   ORM:        <Drizzle / Prisma / raw>
   DB:         <SQLite-on-disk / Postgres / D1>
-  Auth:       <Clerk / NextAuth / Better Auth / rolled-own>
+  Auth:       <Clerk / NextAuth / WorkOS / Better Auth / rolled-own>
   Deploy:     <Fly / Vercel / Cloudflare / other>
   LOC:        <routes>, <components>, <server>
   Tests:      <Vitest / Jest / Playwright / none>
@@ -114,10 +114,14 @@ Port one surface at a time. After each, run the test suite against it.
 
 ### 7. Port auth
 
-- **Clerk / NextAuth / Auth0** → **Better Auth**. User records can be imported (Better Auth has an import script). Session tokens do NOT transfer — users get signed out on cutover; plan comms.
-- **Already Better Auth** — copy `lib/auth.ts`, re-mount at `src/routes/api/auth/$.ts`.
+Default target is **WorkOS AuthKit** (vendored, hosted Admin Portal, 1M MAU free, B2B SSO ready). Flip to **Better Auth** only when the target app must own the `users` table, has an EU residency mandate, or needs custom auth flows AuthKit cannot bend to.
 
-Delegate to `/ro:better-auth` if that skill exists; otherwise inline the wiring.
+- **Clerk / NextAuth / Auth0** → **WorkOS AuthKit** (default). Users export from the source vendor and re-import via WorkOS's User Management API or admin CSV import. Session tokens do NOT transfer; users get signed out on cutover, plan comms.
+- **Clerk / NextAuth / Auth0** → **Better Auth** (alt path). Better Auth has an import script. Same session-cutover caveat applies.
+- **Already Better Auth** — copy `lib/auth.ts`, re-mount at `src/routes/api/auth/$.ts`.
+- **Already WorkOS**: copy server config + `withAuth` route guards, update redirect URIs for the new domain.
+
+Delegate to `/ro:workos` (default) or `/ro:better-auth` (alt). If neither exists, inline the wiring.
 
 ### 8. Data migration (only if `--keep-data`)
 

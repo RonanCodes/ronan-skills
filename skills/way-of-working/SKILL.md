@@ -66,6 +66,10 @@ Scope creep is how clean commits turn into 2,000-line diffs nobody can review.
 
 The whole point of the cadence above is that recovery is always cheap. Respect that.
 
+## When to reach for Codex
+
+Claude Code is primary. Codex (GPT-5.5-backed desktop app) earns a slot for parallel async refactors and high-volume cheap-token bulk jobs (one cited 10x cost win on a mechanical refactor). Reach for it when the work is mechanical, fan-out parallel, and Claude Code's per-task latency dominates. Default everything else to Claude Code; the `.claude/skills/` library, hooks, and ralph loop are a Claude-Code-native moat that does not port.
+
 ## Relation to other skills
 
 - `/ro:coding-principles` — the *what*: simplicity, SOLID, DRY, testing norms

@@ -1,6 +1,6 @@
 ---
 name: better-auth
-description: Wire Better Auth into a TanStack Start app — install, Drizzle adapter schema, server config, route handler, client, OAuth providers (GitHub, Google), role helpers, session server functions. Use when user wants to add auth, login, signup, OAuth, sessions, passwords, or role-based access to a TanStack Start + D1 + Drizzle app.
+description: Wire Better Auth into a TanStack Start app as the alt-path auth provider when you must own the user table, need EU data residency, or have fully custom auth flows. Default auth is now /ro:workos. Use this skill when user explicitly wants Better Auth, owns-the-table semantics, EU-mandated user storage, or custom auth flows the vendored option cannot satisfy.
 category: auth
 argument-hint: [install | add-provider <github|google> | add-roles | generate-schema] [--email]
 allowed-tools: Bash(pnpm *) Bash(pnpx *) Bash(wrangler *) Bash(openssl *) Bash(git *) Read Write Edit
@@ -9,6 +9,13 @@ allowed-tools: Bash(pnpm *) Bash(pnpx *) Bash(wrangler *) Bash(openssl *) Bash(g
 # Better Auth
 
 Wire [Better Auth](https://www.better-auth.com) into a TanStack Start + Drizzle + D1 app. Code-generates schema, server config, route handler, client, and optional OAuth providers and role helpers.
+
+> **When to use this vs `/ro:workos`.** Default auth is `/ro:workos` (vendored AuthKit, hosted Admin Portal, 1M MAU free, B2B SSO ready). Reach for Better Auth when one of these is true:
+> 1. You need to own the `users` table for native joins, FKs, and DB-enforced row-level security against merchant-scoped data.
+> 2. EU data-residency mandate that vendored AuthKit cannot satisfy on its standard plan.
+> 3. Fully custom auth flows (unusual onboarding, custom session shape, exotic providers) that AuthKit does not bend to.
+>
+> If none apply, prefer `/ro:workos`.
 
 ## Usage
 
@@ -246,6 +253,7 @@ export const auth = betterAuth({
 
 ## See also
 
+- `/ro:workos` for the inverse case (vendored auth, hosted Admin Portal, B2B SSO ready, when you do not need to own the user table)
 - `/ro:new-tanstack-app --with-auth` — scaffolds a new app with better-auth pre-wired
 - `/ro:cf-ship` — ship after wiring
 - Better Auth docs: https://www.better-auth.com — use context7 for current syntax
